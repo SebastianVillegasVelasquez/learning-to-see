@@ -1,0 +1,20 @@
+# Dependencias equivalentes a pix2pix/environment.yml + utilidades de preprocesado.
+#
+# torch/torchvision: este venv tiene la build CUDA 12.6 (torch 2.13.0+cu126), verificada
+# funcionando en la GTX 1050 (Pascal, sm_61) a ~62 fps en inferencia.
+# Un `pip install -r requirements.txt` normal instalaría la build CPU (~4 fps).
+# Para reproducir la instalación con GPU NVIDIA:
+#   pip install torch==2.13.0 torchvision --index-url https://download.pytorch.org/whl/cu126
+# En macOS con Apple Silicon NO uses índice: la build estándar ya trae MPS.
+torch>=2.4.0
+torchvision>=0.19.0
+numpy>=1.24.3
+scikit-image
+dominate>=2.8.0
+Pillow>=10.0.0
+wandb>=0.16.0
+# NOTA: visdom (visualizador opcional legacy) se omite: su sdist no compila en Windows
+# con setuptools moderno. pix2pix funciona con --display_id -1 o con wandb.
+# preprocesado Canny (Akten-style)
+opencv-python>=4.9.0
+tqdm>=4.66.0
