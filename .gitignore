@@ -29,3 +29,10 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# --- imágenes de entrenamiento (cientos de MB) ---
+entrenamiento/
+
+# --- logs: solo se versionan los registros de entrenamiento ---
+logs/*.err.log
+logs/*.pid
