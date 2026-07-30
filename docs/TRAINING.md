@@ -27,7 +27,7 @@ y [joshmurr/cci-auto-pix2pix](https://github.com/joshmurr/cci-auto-pix2pix).
 | **Mar** | `entrenamiento/sea_dataset` | 522 (filtrado) | t=20/60, blur 5, median 3 | 130 | 36,3/255 |
 | Flores rojas | `entrenamiento/imagenes_flores` | 197 | t=40/120 | 200 | 26,2/255 |
 
-Para inferencia, ver [README_INFERENCE.md](README_INFERENCE.md). Los umbrales se aplican
+Para inferencia, ver [INFERENCE.md](INFERENCE.md). Los umbrales se aplican
 solos según el modelo elegido.
 
 ## Estructura
@@ -48,8 +48,8 @@ learning_to_see/
 └── .gitignore
 ```
 
-> El entrenamiento **no** se hace aquí: el entorno local es CPU-only y sirve para preparar
-> el dataset. El entrenamiento va en Google Colab con GPU.
+> Los modelos se entrenaron en local con una GPU NVIDIA (ver `logs/`); Google Colab sigue siendo
+> una alternativa válida si no dispones de GPU, y los comandos de abajo sirven igual.
 
 ---
 
