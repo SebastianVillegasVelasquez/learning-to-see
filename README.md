@@ -158,3 +158,7 @@ La lista completa de opciones, el diagnóstico de cámara y las medidas de rendi
 - **Memo Akten**, autor de [Learning to See](https://www.memo.tv/works/learning-to-see/) y de [webcam-pix2pix-tensorflow](https://github.com/memoakten/webcam-pix2pix-tensorflow), de donde se toma el patrón de preprocesado.
 - **Jun-Yan Zhu et al.**, [pytorch-CycleGAN-and-pix2pix](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix).
 - Isola et al., [*Image-to-Image Translation with Conditional Adversarial Networks*](https://arxiv.org/abs/1611.07004), CVPR 2017.
+
+## Licencia
+
+Este proyecto se distribuye bajo la licencia [MIT](LICENSE). El submódulo `pix2pix/` conserva su propia licencia (BSD) y los datasets de imágenes pertenecen a sus respectivos autores.
