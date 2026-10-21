@@ -141,8 +141,6 @@ python webcam_inference.py --benchmark 50     # fps without needing a webcam
 
 The full option list, camera troubleshooting and performance measurements are in [docs/INFERENCE.md](docs/INFERENCE.md).
 
-> The guides in `docs/` are currently written in Spanish.
-
 ## Data and models
 
 - **Datasets**: custom image sets per domain (fire, sea, flowers). They are not included because of their size (~550 MB, more than 9,500 images). To reproduce a model, put your images in `data/raw_images/` and follow step 1.
