@@ -1,81 +1,81 @@
 # Learning to See
 
-Réplica técnica de la pieza **[Learning to See](https://www.memo.tv/works/learning-to-see/)** de Memo Akten, construida con **PyTorch** y **pix2pix**. Una red generativa que solo conoce un tipo de imagen (fuego, mar, nubes, flores) intenta reinterpretar *cualquier* cosa que le muestres a través de la cámara como si fuera de ese mundo.
+A technical replica of **[Learning to See](https://www.memo.tv/works/learning-to-see/)** by Memo Akten, built with **PyTorch** and **pix2pix**. A generative network that only knows one kind of image (fire, sea, clouds, flowers) tries to reinterpret *anything* you show it through the camera as if it belonged to that world.
 
-![Demo: webcam, bordes Canny y resultado generado](docs/demo_panel.png)
+![Demo: webcam, Canny edges and generated output](docs/demo_panel.png)
 
-*De izquierda a derecha: lo que ve la webcam, los bordes (Canny) que recibe el modelo y la imagen que "alucina". Aquí, un cargador de móvil interpretado por el modelo de nubes.*
+*Left to right: what the webcam sees, the Canny edges the model receives, and the image it "hallucinates". Here, a phone charger as interpreted by the clouds model.*
 
 ---
 
-## Cómo funciona
+## How it works
 
-El truco conceptual es entrenar pix2pix con **un solo dominio** de imágenes. El par de entrenamiento no son dos imágenes distintas, sino la misma imagen y su versión de bordes:
+The conceptual trick is to train pix2pix on a **single domain** of images. The training pair is not two different images, but the same image and its edge map:
 
 ```
-A (entrada)  = cv2.Canny(imagen)     <- lo que el modelo "ve"
-B (objetivo) = la imagen original    <- lo que el modelo "imagina"
+A (input)  = cv2.Canny(image)     <- what the model "sees"
+B (target) = the original image   <- what the model "imagines"
 ```
 
-Como el generador solo ha visto fuego (o mar, o flores), cuando en inferencia recibe los bordes de un trapo o de un papel arrugado no puede hacer otra cosa que rellenar esa forma con la materia que conoce.
+Since the generator has only ever seen fire (or sea, or flowers), when it receives the edges of a rag or a crumpled piece of paper at inference time, it has no choice but to fill that shape with the only material it knows.
 
 ```
 webcam -> resize 256x256 -> [median -> blur] -> Canny -> A
-                                                        |
-                                         generador U-Net 256
-                                                        v
-                                                alucinación B'
+                                                         |
+                                            U-Net 256 generator
+                                                         v
+                                                hallucination B'
 ```
 
-| Par de entrenamiento (A &#124; B) |
+| Training pair (A &#124; B) |
 |---|
-| ![Par A\|B del dataset de fuego](docs/sample_pair_fire.png) |
+| ![A\|B pair from the fire dataset](docs/sample_pair_fire.png) |
 
-## Modelos entrenados
+## Trained models
 
-| Modelo | Tecla | Imágenes | Canny (t1/t2) | Épocas | L1 validación |
+| Model | Key | Images | Canny (t1/t2) | Epochs | Validation L1 |
 |---|:---:|---:|:---:|---:|---:|
-| Fuego | `1` | 682 | 50 / 150 | 100 | **17,3** / 255 |
-| Mar | `2` | 522 (filtradas) | 20 / 60, blur 5, median 3 | 130 | 36,3 / 255 |
-| Nubes | `3` | — | — | — | — |
-| Flores rojas | `4` | 197 | 40 / 120 | 200 | 26,2 / 255 |
+| Fire | `1` | 682 | 50 / 150 | 100 | **17.3** / 255 |
+| Sea | `2` | 522 (filtered) | 20 / 60, blur 5, median 3 | 130 | 36.3 / 255 |
+| Clouds | `3` | — | — | — | — |
+| Red flowers | `4` | 197 | 40 / 120 | 200 | 26.2 / 255 |
 
-Los umbrales de Canny en vivo no son los del entrenamiento: una escena de webcam produce menos bordes que las fotos del dataset, así que cada modelo lleva un *preset* calibrado a mano (ver [docs/INFERENCE.md](docs/INFERENCE.md)).
+The live Canny thresholds are not the training ones: a webcam scene produces fewer edges than the dataset photos, so each model ships with a hand-calibrated *preset* (see [docs/INFERENCE.md](docs/INFERENCE.md)).
 
-## Características
+## Features
 
-- **Pipeline de datos reproducible**: validación del dataset crudo y generación de pares A|B con Canny configurable (`check_dataset.py`, `preprocess_canny.py`).
-- **Entrenamiento con pix2pix** (cGAN + L1, generador `unet_256`, discriminador PatchGAN) sobre el repositorio de referencia de Jun-Yan Zhu, incluido como submódulo.
-- **Inferencia en vivo desde webcam** con cambio de modelo en caliente (teclas `1`-`4`), ajuste de umbrales en tiempo real, captura de pantalla y modo a pantalla completa.
-- **Aceleración multiplataforma**: CUDA, Apple Silicon (MPS) o CPU, seleccionado automáticamente.
-- **La aceleración no degrada la imagen**: en cada arranque se compara la salida del acelerador con una referencia en CPU y se descarta si difiere más de la tolerancia. `--half` (fp16) solo se activa si es correcto *y* más rápido.
-- **Rendimiento**: ~62 fps en una GTX 1050 (4 GB) frente a ~4 fps en CPU.
+- **Reproducible data pipeline**: raw dataset validation and A|B pair generation with configurable Canny (`check_dataset.py`, `preprocess_canny.py`).
+- **pix2pix training** (cGAN + L1, `unet_256` generator, PatchGAN discriminator) on top of Jun-Yan Zhu's reference repository, included as a submodule.
+- **Live webcam inference** with hot model switching (keys `1`-`4`), real-time threshold tuning, screenshots and fullscreen mode.
+- **Cross-platform acceleration**: CUDA, Apple Silicon (MPS) or CPU, picked automatically.
+- **Acceleration never degrades the image**: on every start, the accelerator output is compared against a CPU reference and discarded if it differs by more than the tolerance. `--half` (fp16) is only enabled if it is correct *and* faster.
+- **Performance**: ~62 fps on a GTX 1050 (4 GB) versus ~4 fps on CPU.
 
-## Estructura del repositorio
+## Repository layout
 
 ```
 learning_to_see/
-├── pix2pix/                 # submódulo: junyanz/pytorch-CycleGAN-and-pix2pix
-├── preprocess_canny.py      # imágenes crudas -> pares A|B
-├── check_dataset.py         # valida el dataset antes de preprocesar
-├── webcam_inference.py      # demo en vivo con webcam
-├── setup_mac.sh             # instalación en macOS (Apple Silicon)
-├── run_mac.sh               # lanzador para macOS
+├── pix2pix/                 # submodule: junyanz/pytorch-CycleGAN-and-pix2pix
+├── preprocess_canny.py      # raw images -> A|B pairs
+├── check_dataset.py         # validates the dataset before preprocessing
+├── webcam_inference.py      # live webcam demo
+├── setup_mac.sh             # macOS (Apple Silicon) installer
+├── run_mac.sh               # macOS launcher
 ├── requirements.txt
-├── logs/                    # registros de los entrenamientos
-└── docs/                    # guías detalladas e imágenes
+├── logs/                    # training run logs
+└── docs/                    # detailed guides and images
 ```
 
-Los datasets de imágenes (`entrenamiento/`, `data/`) y los pesos entrenados (`checkpoints/`, ~200 MB por generador) **no se versionan**; ver [Datos y modelos](#datos-y-modelos).
+The image datasets (`entrenamiento/`, `data/`) and the trained weights (`checkpoints/`, ~200 MB per generator) are **not versioned**; see [Data and models](#data-and-models).
 
-## Instalación
+## Installation
 
 ```bash
-git clone --recurse-submodules <URL-DEL-REPOSITORIO>
-cd learning_to_see
+git clone --recurse-submodules https://github.com/SebastianVillegasVelasquez/learning-to-see.git
+cd learning-to-see
 ```
 
-Si ya clonaste sin submódulos: `git submodule update --init`.
+If you already cloned without submodules: `git submodule update --init`.
 
 **Windows / Linux**
 
@@ -83,7 +83,7 @@ Si ya clonaste sin submódulos: `git submodule update --init`.
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1          # Linux/macOS: source .venv/bin/activate
 
-# GPU NVIDIA (CUDA 12.6)
+# NVIDIA GPU (CUDA 12.6)
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 pip install -r requirements.txt
 ```
@@ -94,71 +94,73 @@ pip install -r requirements.txt
 bash setup_mac.sh
 ```
 
-La build estándar de PyTorch para macOS ya incluye MPS; no hace falta ningún índice especial.
+The standard PyTorch build for macOS already includes MPS; no special index is needed.
 
-## Uso
+## Usage
 
-### 1. Preparar el dataset
+### 1. Prepare the dataset
 
 ```bash
 python check_dataset.py --input_dir ./data/raw_images
-python preprocess_canny.py --preview 8 --t1 60 --t2 180 --pre_blur 3 --pre_median 3   # calibrar
+python preprocess_canny.py --preview 8 --t1 60 --t2 180 --pre_blur 3 --pre_median 3   # calibrate
 python preprocess_canny.py --t1 60 --t2 180 --pre_blur 3 --pre_median 3 --val_frac 0.05
 ```
 
-Genera `data/AB/train/*.png`, cada uno de 512x256 = `[A | B]`.
+This produces `data/AB/train/*.png`, each one 512x256 = `[A | B]`.
 
-### 2. Entrenar
+### 2. Train
 
-Desde `pix2pix/`:
+From `pix2pix/`:
 
 ```bash
-python train.py --dataroot ../data/AB --name mi_modelo \
+python train.py --dataroot ../data/AB --name my_model \
   --model pix2pix --direction AtoB --dataset_mode aligned \
   --load_size 256 --crop_size 256 --batch_size 1 \
   --n_epochs 65 --n_epochs_decay 65 --save_epoch_freq 10 \
   --checkpoints_dir ../checkpoints
 ```
 
-Detalles y recomendaciones en [docs/TRAINING.md](docs/TRAINING.md).
+Details and recommendations in [docs/TRAINING.md](docs/TRAINING.md).
 
-### 3. Inferencia en vivo
+### 3. Live inference
 
 ```bash
 python webcam_inference.py                    # Windows / Linux
 bash run_mac.sh                               # macOS
-python webcam_inference.py --benchmark 50     # fps sin necesitar webcam
+python webcam_inference.py --benchmark 50     # fps without needing a webcam
 ```
 
-| Tecla | Acción |
+| Key | Action |
 |---|---|
-| `1` `2` `3` `4` | cambiar de modelo (con su preset de filtrado) |
-| `+` `-` | subir / bajar ambos umbrales de Canny |
-| `b` / `m` | ciclar blur gaussiano / mediana previos |
-| `i` · `f` · `r` | invertir bordes · espejo · restaurar preset |
-| `s` | guardar captura |
-| `h` · `q` | alternar ayuda · salir |
+| `1` `2` `3` `4` | switch model (with its filtering preset) |
+| `+` `-` | raise / lower both Canny thresholds |
+| `b` / `m` | cycle the pre-Canny Gaussian blur / median filter |
+| `i` · `f` · `r` | invert edges · mirror · restore preset |
+| `s` | save a screenshot |
+| `h` · `q` | toggle help · quit |
 
-La lista completa de opciones, el diagnóstico de cámara y las medidas de rendimiento están en [docs/INFERENCE.md](docs/INFERENCE.md).
+The full option list, camera troubleshooting and performance measurements are in [docs/INFERENCE.md](docs/INFERENCE.md).
 
-## Datos y modelos
+> The guides in `docs/` are currently written in Spanish.
 
-- **Datasets**: imágenes propias por dominio (fuego, mar, flores). No se incluyen por tamaño (~550 MB, más de 9 500 imágenes). Para reproducir un modelo, coloca tus imágenes en `data/raw_images/` y sigue el paso 1.
-- **Pesos**: `checkpoints/<modelo>/latest_net_G.pth`. El script de inferencia los busca en `checkpoints/fire`, `sea`, `v2` (nubes) y `flores_rojas`.
+## Data and models
 
-## Decisiones de diseño
+- **Datasets**: custom image sets per domain (fire, sea, flowers). They are not included because of their size (~550 MB, more than 9,500 images). To reproduce a model, put your images in `data/raw_images/` and follow step 1.
+- **Weights**: `checkpoints/<model>/latest_net_G.pth`. The inference script looks for them in `checkpoints/fire`, `sea`, `v2` (clouds) and `flores_rojas`.
 
-- **Un dominio, no dos.** Es lo que da sentido a la pieza: el modelo no traduce entre estilos, "rellena" bordes con lo único que conoce.
-- **Estiramiento a 256x256 sin preservar proporción**, igual que el pipeline original, para que preproceso e inferencia coincidan exactamente.
-- **Normalización idéntica al entrenamiento** (`(x - 0.5) / 0.5`), y generador construido con la misma fábrica de `pix2pix/models/networks.py`.
-- **Captura de cámara deliberadamente simple.** Los intentos de acelerarla con hilos o forzando backends empeoraron la imagen en Windows; el razonamiento está documentado en [docs/INFERENCE.md](docs/INFERENCE.md).
+## Design decisions
 
-## Créditos
+- **One domain, not two.** This is what gives the piece its meaning: the model does not translate between styles, it "fills in" edges with the only thing it knows.
+- **Stretch to 256x256 without preserving aspect ratio**, as in the original pipeline, so preprocessing and inference match exactly.
+- **Normalization identical to training** (`(x - 0.5) / 0.5`), and the generator is built with the same factory from `pix2pix/models/networks.py`.
+- **Deliberately simple camera capture.** Attempts to speed it up with threads or forced backends made the image worse on Windows; the reasoning is documented in [docs/INFERENCE.md](docs/INFERENCE.md).
 
-- **Memo Akten**, autor de [Learning to See](https://www.memo.tv/works/learning-to-see/) y de [webcam-pix2pix-tensorflow](https://github.com/memoakten/webcam-pix2pix-tensorflow), de donde se toma el patrón de preprocesado.
+## Credits
+
+- **Memo Akten**, author of [Learning to See](https://www.memo.tv/works/learning-to-see/) and [webcam-pix2pix-tensorflow](https://github.com/memoakten/webcam-pix2pix-tensorflow), where the preprocessing pattern comes from.
 - **Jun-Yan Zhu et al.**, [pytorch-CycleGAN-and-pix2pix](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix).
 - Isola et al., [*Image-to-Image Translation with Conditional Adversarial Networks*](https://arxiv.org/abs/1611.07004), CVPR 2017.
 
-## Licencia
+## License
 
-Este proyecto se distribuye bajo la licencia [MIT](LICENSE). El submódulo `pix2pix/` conserva su propia licencia (BSD) y los datasets de imágenes pertenecen a sus respectivos autores.
+This project is released under the [MIT](LICENSE) license. The `pix2pix/` submodule keeps its own license (BSD) and the image datasets belong to their respective authors.
